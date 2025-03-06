@@ -1,20 +1,37 @@
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import LoginScreen from './screens/LoginScreen';
+import RegisterScreen from './screens/RegisterScreen';
+import HomeScreen from './screens/HomeScreen';
+import PlaceDetailsScreen from './screens/PlaceDetailsScreen';
+import AddPlaceScreen from './screens/AddPlaceScreen';
+import AddReviewScreen from './screens/AddReviewScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import { AuthProvider } from './context/AuthContext';
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <NavigationContainer>
+          <Stack.Navigator initialRouteName="Login">
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="PlaceDetails" component={PlaceDetailsScreen} options={{ title: 'Place Details' }} />
+            <Stack.Screen name="AddPlace" component={AddPlaceScreen} options={{ title: 'Add New Place' }} />
+            <Stack.Screen name="AddReview" component={AddReviewScreen} options={{ title: 'Write a Review' }} />
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'My Profile' }} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </AuthProvider>
       <StatusBar style="auto" />
-    </View>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
