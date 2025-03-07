@@ -1,7 +1,8 @@
+// HomeScreen.js with pull-to-refresh added
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Modal } from "react-native"
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl } from "react-native"
 import { collection, getDocs, query, orderBy, limit, where } from "firebase/firestore"
 import { db } from "../firebase-config"
 import { useAuth } from "../context/AuthContext"
@@ -9,14 +10,14 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { Feather } from "@expo/vector-icons"
 import PlaceCard from "../components/PlaceCard"
 import { useFocusEffect } from '@react-navigation/native';
+import Header from "./Header"
 
 export default function HomeScreen({ navigation }) {
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const [refreshing, setRefreshing] = useState(false) // Add refreshing state
   const [searchQuery, setSearchQuery] = useState("")
   const { currentUser, logout } = useAuth()
-  const [logoutModalVisible, setLogoutModalVisible] = useState(false) // Logout confirmation modal
 
   useEffect(() => {
     fetchPlaces()
@@ -57,21 +58,17 @@ export default function HomeScreen({ navigation }) {
       console.error("Error fetching places:", error)
     } finally {
       setLoading(false)
-      setRefreshing(false)
+      setRefreshing(false) // Make sure to reset refreshing state
     }
   }
 
+  // Add onRefresh function for pull-to-refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true)
     fetchPlaces()
   }, [])
 
-  const handleLogoutPress = () => {
-    setLogoutModalVisible(true) // Show confirmation modal
-  }
-
-  const confirmLogout = async () => {
-    setLogoutModalVisible(false) // Hide modal
+  const handleLogout = async () => {
     try {
       await logout()
       navigation.replace("Login")
@@ -89,14 +86,7 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Spotlight</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.iconButton} onPress={handleLogoutPress}>
-            <Feather name="log-out" size={24} color="#333" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Header title="Spotlight" navigation={navigation} /> 
 
       <View style={styles.searchContainer}>
         <Feather name="search" size={20} color="#666" style={styles.searchIcon} />
@@ -108,7 +98,7 @@ export default function HomeScreen({ navigation }) {
         />
       </View>
 
-      {loading && !refreshing ? (
+      {loading && !refreshing ? ( // Only show loading indicator if not refreshing
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FF6B6B" />
         </View>
@@ -127,7 +117,7 @@ export default function HomeScreen({ navigation }) {
               </View>
             }
             contentContainerStyle={styles.listContent}
-            refreshControl={
+            refreshControl={ // Add RefreshControl component
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
@@ -142,23 +132,6 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </>
       )}
-
-      {/* Logout Confirmation Modal */}
-      <Modal transparent={true} animationType="fade" visible={logoutModalVisible}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Are you sure you want to logout?</Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setLogoutModalVisible(false)}>
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmButton} onPress={confirmLogout}>
-                <Text style={styles.buttonText}>Logout</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   )
 }
@@ -205,50 +178,43 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
   },
-  modalOverlay: {
+  listContent: {
+    padding: 15,
+  },
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  modalContainer: {
-    width: 300,
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 10,
+  emptyContainer: {
     alignItems: "center",
+    justifyContent: "center",
+    padding: 30,
   },
-  modalTitle: {
+  emptyText: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
-    textAlign: "center",
-    marginBottom: 15,
+    marginBottom: 8,
   },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
+  emptySubText: {
+    fontSize: 14,
+    color: "#666",
   },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: "#ccc",
-    padding: 10,
-    borderRadius: 5,
-    alignItems: "center",
-    marginRight: 5,
-  },
-  confirmButton: {
-    flex: 1,
+  addButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
     backgroundColor: "#FF6B6B",
-    padding: 10,
-    borderRadius: 5,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
     alignItems: "center",
-    marginLeft: 5,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
 })
-
