@@ -5,7 +5,6 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ActivityInd
 import { useAuth } from "../context/AuthContext"
 
 export default function RegisterScreen({ navigation }) {
-  const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -13,7 +12,7 @@ export default function RegisterScreen({ navigation }) {
   const { register } = useAuth()
 
   const handleRegister = async () => {
-    if (!username || !email || !password || !confirmPassword) {
+    if (!email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields")
       return
     }
@@ -25,7 +24,7 @@ export default function RegisterScreen({ navigation }) {
 
     try {
       setLoading(true)
-      await register(email, password, username)
+      await register(email, password)
       navigation.replace("Home")
     } catch (error) {
       Alert.alert("Registration Failed", error.message)
@@ -38,17 +37,10 @@ export default function RegisterScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.logoContainer}>
         <Image source={{ uri: "https://placeholder.svg?height=100&width=100" }} style={styles.logo} />
-        <Text style={styles.appName}>PlaceReview</Text>
+        <Text style={styles.appName}>Welcome to Spotlight!</Text>
       </View>
 
       <View style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-        />
         <TextInput
           style={styles.input}
           placeholder="Email"

@@ -1,9 +1,8 @@
-// HomeScreen.js with pull-to-refresh added
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl } from "react-native"
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore"
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Modal } from "react-native"
+import { collection, getDocs, query, orderBy, limit, where } from "firebase/firestore"
 import { db } from "../firebase-config"
 import { useAuth } from "../context/AuthContext"
 import { SafeAreaView } from "react-native-safe-area-context"
@@ -14,9 +13,10 @@ import { useFocusEffect } from '@react-navigation/native';
 export default function HomeScreen({ navigation }) {
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false) // Add refreshing state
+  const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const { currentUser, logout } = useAuth()
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false) // Logout confirmation modal
 
   useEffect(() => {
     fetchPlaces()
@@ -29,9 +29,19 @@ export default function HomeScreen({ navigation }) {
   );
 
   const fetchPlaces = async () => {
+    if (!currentUser || !currentUser.uid) {
+      console.error("User is not authenticated or UID is missing")
+      return
+    }
+
     try {
       setLoading(true)
-      const placesQuery = query(collection(db, "places"), orderBy("createdAt", "desc"), limit(20))
+      const placesQuery = query(
+        collection(db, "places"),
+        where("createdBy", "==", currentUser.uid),
+        orderBy("createdAt", "desc"),
+        limit(20)
+      )
       const querySnapshot = await getDocs(placesQuery)
 
       const placesList = []
@@ -47,17 +57,21 @@ export default function HomeScreen({ navigation }) {
       console.error("Error fetching places:", error)
     } finally {
       setLoading(false)
-      setRefreshing(false) // Make sure to reset refreshing state
+      setRefreshing(false)
     }
   }
 
-  // Add onRefresh function for pull-to-refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true)
     fetchPlaces()
   }, [])
 
-  const handleLogout = async () => {
+  const handleLogoutPress = () => {
+    setLogoutModalVisible(true) // Show confirmation modal
+  }
+
+  const confirmLogout = async () => {
+    setLogoutModalVisible(false) // Hide modal
     try {
       await logout()
       navigation.replace("Login")
@@ -76,12 +90,9 @@ export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>PlaceReview</Text>
+        <Text style={styles.headerTitle}>Spotlight</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate("Profile")}>
-            <Feather name="user" size={24} color="#333" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
+          <TouchableOpacity style={styles.iconButton} onPress={handleLogoutPress}>
             <Feather name="log-out" size={24} color="#333" />
           </TouchableOpacity>
         </View>
@@ -97,7 +108,7 @@ export default function HomeScreen({ navigation }) {
         />
       </View>
 
-      {loading && !refreshing ? ( // Only show loading indicator if not refreshing
+      {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FF6B6B" />
         </View>
@@ -116,7 +127,7 @@ export default function HomeScreen({ navigation }) {
               </View>
             }
             contentContainerStyle={styles.listContent}
-            refreshControl={ // Add RefreshControl component
+            refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
@@ -131,6 +142,23 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </>
       )}
+
+      {/* Logout Confirmation Modal */}
+      <Modal transparent={true} animationType="fade" visible={logoutModalVisible}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Are you sure you want to logout?</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setLogoutModalVisible(false)}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmButton} onPress={confirmLogout}>
+                <Text style={styles.buttonText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -177,44 +205,50 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
   },
-  listContent: {
-    padding: 15,
-  },
-  loadingContainer: {
+  modalOverlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  emptyContainer: {
+  modalContainer: {
+    width: 300,
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
     alignItems: "center",
-    justifyContent: "center",
-    padding: 30,
   },
-  emptyText: {
+  modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 8,
+    textAlign: "center",
+    marginBottom: 15,
   },
-  emptySubText: {
-    fontSize: 14,
-    color: "#666",
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
   },
-  addButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    backgroundColor: "#FF6B6B",
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: "center",
+  cancelButton: {
+    flex: 1,
+    backgroundColor: "#ccc",
+    padding: 10,
+    borderRadius: 5,
     alignItems: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    marginRight: 5,
+  },
+  confirmButton: {
+    flex: 1,
+    backgroundColor: "#FF6B6B",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginLeft: 5,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 })
 

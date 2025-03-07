@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native"
-import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore"
+import { doc, getDoc, setDoc } from "firebase/firestore"
 import { db } from "../firebase-config"
 import { useAuth } from "../context/AuthContext"
 import { Feather } from "@expo/vector-icons"
@@ -10,45 +10,61 @@ import { Feather } from "@expo/vector-icons"
 export default function AddReviewScreen({ route, navigation }) {
   const { placeId } = route.params
   const [rating, setRating] = useState(0)
+  const [expensiveness, setExpesiveness] = useState(0)
   const [comment, setComment] = useState("")
   const [willReturn, setWillReturn] = useState(true)
   const [loading, setLoading] = useState(false)
   const { currentUser } = useAuth()
+
+  useEffect(() => {
+    fetchExistingReview()
+  }, [placeId])
+
+  const fetchExistingReview = async () => {
+    try {
+      const placeRef = doc(db, "places", placeId)
+      const placeDoc = await getDoc(placeRef)
+      const review = placeDoc.data()?.reviews?.[currentUser.uid]
+      if (review) {
+        setRating(review.rating)
+        setExpesiveness(review.expensiveness)
+        setComment(review.comment)
+        setWillReturn(review.willReturn)
+      }
+    } catch (error) {
+      console.error("Error fetching existing review:", error)
+    }
+  }
 
   const handleSubmit = async () => {
     if (rating === 0) {
       Alert.alert("Error", "Please select a rating")
       return
     }
+    if (expensiveness === 0) {
+      Alert.alert("Error", "Please select a expessiveness rating")
+      return
+    }
 
     try {
       setLoading(true)
-
-      // Get user profile data
-      const userDoc = await getDoc(doc(db, "users", currentUser.uid))
-      const username = userDoc.data()?.username || "Anonymous"
-
-      // Create review object
+      const placeRef = doc(db, "places", placeId)
       const reviewData = {
         userId: currentUser.uid,
-        username,
         rating,
+        expensiveness,
         comment,
         willReturn,
         createdAt: new Date().toISOString(),
       }
 
-      // Update place document with new review
-      const placeRef = doc(db, "places", placeId)
-      await updateDoc(placeRef, {
-        reviews: arrayUnion(reviewData),
-      })
+      await setDoc(placeRef, { reviews: { [currentUser.uid]: reviewData } }, { merge: true })
 
-      Alert.alert("Success", "Your review has been added!")
+      Alert.alert("Success", "Your review has been updated!")
       navigation.goBack()
     } catch (error) {
-      console.error("Error adding review:", error)
-      Alert.alert("Error", "Failed to add review. Please try again.")
+      console.error("Error updating review:", error)
+      Alert.alert("Error", "Failed to update review. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -65,12 +81,25 @@ export default function AddReviewScreen({ route, navigation }) {
     }
     return stars
   }
+  const renderExpensivenessStars = () => {
+    const stars = []
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <TouchableOpacity key={i} onPress={() => setExpesiveness(i)} style={styles.starButton}>
+          <Feather name="star" size={32} color={i <= expensiveness ? "#FFD700" : "#e0e0e0"} />
+        </TouchableOpacity>,
+      )
+    }
+    return stars
+  }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.formContainer}>
         <Text style={styles.label}>Rating *</Text>
         <View style={styles.ratingContainer}>{renderStars()}</View>
+        <Text style={styles.label}>Expensiveness *</Text>
+        <View style={styles.ratingContainer}>{renderExpensivenessStars()}</View>
 
         <Text style={styles.label}>Your Review</Text>
         <TextInput
@@ -99,7 +128,7 @@ export default function AddReviewScreen({ route, navigation }) {
         </View>
 
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Submit Review</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Update Review</Text>}
         </TouchableOpacity>
       </View>
     </ScrollView>

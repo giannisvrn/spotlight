@@ -31,7 +31,7 @@ export default function LoginScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.logoContainer}>
         <Image source={{ uri: "https://placeholder.svg?height=100&width=100" }} style={styles.logo} />
-        <Text style={styles.appName}>PlaceReview</Text>
+        <Text style={styles.appName}>Welcome to Spotlight!</Text>
       </View>
 
       <View style={styles.formContainer}>

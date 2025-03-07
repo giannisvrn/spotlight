@@ -1,13 +1,15 @@
 "use client"
 
-import { createContext, useState, useEffect, useContext } from "react"
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from "../firebase-config"
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth"
 import { doc, setDoc, getDoc } from "firebase/firestore"
 
 const AuthContext = createContext()
 
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => {
+  return useContext(AuthContext)
+}
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null)
@@ -19,12 +21,11 @@ export const AuthProvider = ({ children }) => {
   }
 
   // Register a new user
-  const register = async (email, password, username) => {
+  const register = async (email, password) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
 
     // Create a user profile in Firestore
     await setDoc(doc(db, "users", userCredential.user.uid), {
-      username,
       email,
       createdAt: new Date().toISOString(),
     })
@@ -33,8 +34,12 @@ export const AuthProvider = ({ children }) => {
   }
 
   // Sign out
-  const logout = () => {
-    return signOut(auth)
+  const logout = async () => {
+    try {
+      await signOut(auth)
+    } catch (error) {
+      console.error("Error logging out:", error)
+    }
   }
 
   // Get user profile data
@@ -50,13 +55,8 @@ export const AuthProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const profile = await getUserProfile(user.uid)
-        setCurrentUser({ ...user, profile })
-      } else {
-        setCurrentUser(null)
-      }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user)
       setLoading(false)
     })
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native"
 import { doc, getDoc } from "firebase/firestore"
 import { db } from "../firebase-config"
 import { Feather } from "@expo/vector-icons"
@@ -65,25 +65,10 @@ export default function PlaceDetailsScreen({ route, navigation }) {
 
   return (
     <ScrollView style={styles.container}>
-      {place.imageUrl ? (
-        <Image source={{ uri: place.imageUrl }} style={styles.image} />
-      ) : (
-        <View style={styles.imagePlaceholder}>
-          <Feather name="image" size={50} color="#ccc" />
-        </View>
-      )}
-
       <View style={styles.content}>
         <Text style={styles.name}>{place.name}</Text>
         <View style={styles.categoryContainer}>
           <Text style={styles.category}>{place.category}</Text>
-        </View>
-
-        <View style={styles.ratingContainer}>
-          <Feather name="star" size={20} color="#FFD700" />
-          <Text style={styles.rating}>
-            {calculateAverageRating()} ({place.reviews ? place.reviews.length : 0} reviews)
-          </Text>
         </View>
 
         <View style={styles.section}>
@@ -100,18 +85,20 @@ export default function PlaceDetailsScreen({ route, navigation }) {
 
         <View style={styles.section}>
           <View style={styles.reviewHeader}>
-            <Text style={styles.sectionTitle}>Reviews</Text>
+            <Text style={styles.sectionTitle}>Your Review</Text>
             <TouchableOpacity
               style={styles.addReviewButton}
               onPress={() => navigation.navigate("AddReview", { placeId: place.id })}
             >
-              <Text style={styles.addReviewText}>Add Review</Text>
-              <Feather name="plus" size={16} color="#FF6B6B" />
+              <Text style={styles.addReviewText}>
+                {place.reviews && place.reviews[currentUser.uid] ? "Edit Review" : "Add Review"}
+              </Text>
+              <Feather name={place.reviews && place.reviews[currentUser.uid] ? "edit" : "plus"} size={16} color="#fff" />
             </TouchableOpacity>
           </View>
 
-          {place.reviews && place.reviews.length > 0 ? (
-            place.reviews.map((review, index) => <ReviewCard key={index} review={review} />)
+          {place.reviews && place.reviews[currentUser.uid] ? (
+            <ReviewCard review={place.reviews[currentUser.uid]} />
           ) : (
             <Text style={styles.noReviews}>No reviews yet. Be the first to review!</Text>
           )}
@@ -124,36 +111,32 @@ export default function PlaceDetailsScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f9f9f9",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  image: {
-    width: "100%",
-    height: 250,
-    resizeMode: "cover",
-  },
-  imagePlaceholder: {
-    width: "100%",
-    height: 250,
-    backgroundColor: "#f5f5f5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
   content: {
     padding: 20,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    margin: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   name: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "bold",
     color: "#333",
     marginBottom: 8,
   },
   categoryContainer: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#e0e0e0",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -162,26 +145,19 @@ const styles = StyleSheet.create({
   },
   category: {
     fontSize: 14,
-    color: "#666",
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  rating: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: "#333",
+    color: "#555",
   },
   section: {
     marginBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+    paddingBottom: 12,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   address: {
     fontSize: 16,
@@ -202,10 +178,14 @@ const styles = StyleSheet.create({
   addReviewButton: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#FF6B6B",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 5,
   },
   addReviewText: {
     fontSize: 14,
-    color: "#FF6B6B",
+    color: "#fff",
     fontWeight: "bold",
     marginRight: 4,
   },
