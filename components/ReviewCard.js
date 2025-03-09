@@ -36,7 +36,7 @@ export default function ReviewCard({ review }) {
     switch (expensiveness) {
       case 1: return 'Cheap'
       case 2: return 'Affordable'
-      case 3: return 'Fair priced'
+      case 3: return 'Fairly priced'
       case 4: return 'Expensive'
       case 5: return 'Really expensive'
       default: return 'Unknown'

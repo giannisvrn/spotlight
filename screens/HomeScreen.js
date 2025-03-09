@@ -15,9 +15,9 @@ import Header from "./Header"
 export default function HomeScreen({ navigation }) {
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false) // Add refreshing state
+  const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const { currentUser, logout } = useAuth()
+  const { currentUser } = useAuth()
 
   useEffect(() => {
     fetchPlaces()
@@ -67,15 +67,6 @@ export default function HomeScreen({ navigation }) {
     setRefreshing(true)
     fetchPlaces()
   }, [])
-
-  const handleLogout = async () => {
-    try {
-      await logout()
-      navigation.replace("Login")
-    } catch (error) {
-      console.error("Logout error:", error)
-    }
-  }
 
   const filteredPlaces = places.filter(
     (place) =>

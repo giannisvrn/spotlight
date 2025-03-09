@@ -24,8 +24,6 @@ const categories = [
   { label: "Bar", value: "Bar" },
   { label: "Bakery", value: "Bakery" },
   { label: "Fast Food", value: "Fast Food" },
-  { label: "Fine Dining", value: "Fine Dining" },
-  { label: "Food Truck", value: "Food Truck" },
   { label: "Other", value: "Other" }
 ]
 
@@ -154,8 +152,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 })
-
-const inputSelectStyles = {
-  // Customize styles for InputSelect here
-}
-
