@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native"
-import { doc, getDoc } from "firebase/firestore"
+import { doc, getDoc, deleteDoc } from "firebase/firestore"
 import { db } from "../firebase-config"
 import { Feather } from "@expo/vector-icons"
 import { useAuth } from "../context/AuthContext"
 import ReviewCard from "../components/ReviewCard"
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 export default function PlaceDetailsScreen({ route, navigation }) {
   const { placeId } = route.params
@@ -48,11 +49,32 @@ export default function PlaceDetailsScreen({ route, navigation }) {
     }
   }
 
-  const calculateAverageRating = () => {
-    if (!place.reviews || place.reviews.length === 0) return 0
-
-    const sum = place.reviews.reduce((total, review) => total + review.rating, 0)
-    return (sum / place.reviews.length).toFixed(1)
+  const handleDelete = async () => {
+    Alert.alert(
+      "Delete Place",
+      "Are you sure you want to delete this place? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              setLoading(true)
+              const docRef = doc(db, "places", placeId)
+              await deleteDoc(docRef)
+              Alert.alert("Success", "Place deleted successfully.")
+              navigation.goBack()
+            } catch (error) {
+              console.error("Error deleting place:", error)
+              Alert.alert("Error", "Failed to delete place.")
+            } finally {
+              setLoading(false)
+            }
+          } 
+        }
+      ]
+    )
   }
 
   if (loading) {
@@ -71,8 +93,8 @@ export default function PlaceDetailsScreen({ route, navigation }) {
           <Text style={styles.category}>{place.category}</Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address</Text>
+        <View style={styles.addressSection}>
+          <Icon name="map-marker" size={20} color="#000" style={styles.icon} />
           <Text style={styles.address}>{place.address}</Text>
         </View>
 
@@ -103,6 +125,12 @@ export default function PlaceDetailsScreen({ route, navigation }) {
             <Text style={styles.noReviews}>No reviews yet. Be the first to review!</Text>
           )}
         </View>
+
+        {/* Delete Button */}
+        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+          <Text style={styles.deleteButtonText}>Delete Place</Text>
+          <Feather name="trash-2" size={20} color="#fff" />
+        </TouchableOpacity>
       </View>
     </ScrollView>
   )
@@ -153,6 +181,17 @@ const styles = StyleSheet.create({
     borderBottomColor: "#ddd",
     paddingBottom: 12,
   },
+  addressSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+    paddingBottom: 12,
+  },
+  icon: {
+    marginRight: 5,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
@@ -196,5 +235,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FF6B6B",
+    padding: 10,
+    borderRadius: 5,
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "bold",
+    marginRight: 8,
+  },
 })
-
