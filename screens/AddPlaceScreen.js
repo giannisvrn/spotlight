@@ -80,7 +80,6 @@ export default function AddPlaceScreen({ navigation }) {
             selectedValue={category}
             onValueChange={(value) => setCategory(value)}
             placeholder="Select a category..."
-            style={inputSelectStyles}
           />
         </View>
         
